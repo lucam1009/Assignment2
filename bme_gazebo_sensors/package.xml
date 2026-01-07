@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>bme_gazebo_sensors</name>
+  <version>1.0.0</version>
+  <description>
+    Simulation of various sensors with Gazebo Harmonic and ROS Jazzy for BME MOGI ROS2 course
+  </description>
+  <maintainer email="lucamm1009@gmail.com.com">Luca</maintainer>
+  <license>Apache License 2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  
+  <depend>rclcpp</depend>
+  <build_depend>geometry_msgs</build_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <build_depend>std_msgs</build_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <build_depend>assignment2_msgs</build_depend>  
+  <exec_depend>assignment2_msgs</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
