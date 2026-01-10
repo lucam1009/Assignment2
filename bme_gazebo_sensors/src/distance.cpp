@@ -5,12 +5,12 @@
 #include <string>
 #include <limits>
 #include "std_msgs/msg/int32.hpp"
-#include "std_msgs/msg/int32.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "assignment2_msgs/srv/threshold.hpp"
 #include <cmath>
 
 using std::placeholders::_1;
+using std::placeholders::_2;
 using Threshold = assignment2_msgs::srv::Threshold;
 
 
@@ -24,16 +24,15 @@ class distance_check: public rclcpp::Node
         sub_position = this->create_subscription<nav_msgs::msg::Odometry>("/odom", 10, std::bind(&distance_check::callback_position, this, _1));
         pub_safety = this->create_publisher<std_msgs::msg::Int32>("/safety_status", 10);
         pub_emergency_vel = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
-        threshold_client = this->create_client<threshold>("generate_threshold");
-        
-        threshold_timer = this->create_wall_timer(
-            std::chrono::seconds(2), std::bind(&distance_check::request_threshold, this);
-        )
+        server = this->create_service<Threshold>("generate_threshold", std::bind(&distance_check::handle_service, this, _1, _2));
+
+
     }
 
     float angle, ostacolo_x, ostacolo_y;
     bool emergency_mode = false;
     float min_distance = 100.0;
+    float current_threshold = 1.5;
     geometry_msgs::msg::Pose current_pose;
     
     private:
@@ -69,6 +68,8 @@ class distance_check: public rclcpp::Node
         }
         if(valid_points > 0)
             min_distance = min_distance_loc;
+        else
+            min_distance = 100.0;
     }
 
 
@@ -82,7 +83,7 @@ class distance_check: public rclcpp::Node
                 RCLCPP_INFO(this->get_logger(), "Obstacle too close, go back to safe position");
                 emergency_mode = true;
             }
-        }else if(min_distance > 1){
+        }else if(min_distance > (current_threshold+0.5)){
             if(emergency_mode){
                 emergency_mode = false;
             }
@@ -102,25 +103,10 @@ class distance_check: public rclcpp::Node
         pub_safety->publish(status);
     }
 
-    void request_threshold()
-    {
-        if (!threshold_client_->wait_for_service(std::chrono::seconds(1))) {
-            RCLCPP_WARN(this->get_logger(), "Waiting for generate_threshold service...");
-            return;
-        }
-
-        auto request = std::make_shared<threshold::Request>();
-        request->threshold = 5;
-
-        auto result = threshold_client->async_send_request(
-            request,
-            [this](rclcpp::Client<threshold>::SharedFuture future)
-            {
-                auto response = future.get();
-                current_threshold = response->threshold;
-                RCLCPP_INFO(this->get_logger(), "Updated threshold from service: threshold=%.2f", current_threshold);
-            }
-        );
+    void handle_service(const std::shared_ptr<Threshold::Request> req, std::shared_ptr<Threshold::Response> res){
+        current_threshold = req->threshold;
+        res->x = current_threshold;
+        RCLCPP_INFO(this->get_logger(), "New threshold: %.2f", current_threshold);       
     }
 
 
@@ -129,8 +115,8 @@ class distance_check: public rclcpp::Node
     rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_safety;
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_emergency_vel;
-    rclcpp::Client::<threshold>::SharedPtr threshold_client;
     rclcpp::TimerBase::SharedPtr threshold_timer_;
+    rclcpp::Service<Threshold>::SharedPtr server;
 
 };
 
