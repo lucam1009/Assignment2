@@ -8,10 +8,12 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "assignment2_msgs/srv/threshold.hpp"
 #include <cmath>
+#include "assignment2_msgs/msg/obstacle_position.hpp"
 
 using std::placeholders::_1;
 using std::placeholders::_2;
 using Threshold = assignment2_msgs::srv::Threshold;
+using Obstacle_position = assignment2_msgs::msg::ObstaclePosition;
 
 
 class distance_check: public rclcpp::Node
@@ -25,11 +27,12 @@ class distance_check: public rclcpp::Node
         pub_safety = this->create_publisher<std_msgs::msg::Int32>("/safety_status", 10);
         pub_emergency_vel = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
         server = this->create_service<Threshold>("generate_threshold", std::bind(&distance_check::handle_service, this, _1, _2));
+        pub_obstacle = this->create_publisher<assignment2_msgs::msg::ObstaclePosition>("/obstacle", 10);
 
 
     }
 
-    float angle, ostacolo_x, ostacolo_y;
+    float angle, ostacolo_x, ostacolo_y, distance;
     bool emergency_mode = false;
     float min_distance = 100.0;
     float current_threshold = 1.5;
@@ -45,30 +48,33 @@ class distance_check: public rclcpp::Node
     void callback_scan(const sensor_msgs::msg::LaserScan::SharedPtr msg)
     {
         int n_ranges = msg->ranges.size();
-        float prev_distance = 0.0;
         float min_distance_loc = 100.0;
         int valid_points = 0;
+        int index = 0;
         for(int i = 0; i < n_ranges; i++){
             float distance = msg->ranges[i];
             bool check = std::isfinite(distance) && distance > msg->range_min && distance < msg->range_max;
             if(check){
                 valid_points++;
-                if (distance < min_distance_loc)
+                if (distance < min_distance_loc){
                     min_distance_loc = distance;
-                float diff = std::abs(distance - prev_distance);
-                if(diff > 0.75){
-                    float angle = msg->angle_min + (i * msg->angle_increment);
-                    float ostacolo_x = distance * std::cos(angle);
-                    float ostacolo_y = distance * std::sin(angle);
+                    index = i;
                 }
-                prev_distance = distance;
-            }else{
-                prev_distance = 0.0;
             }
         }
-        if(valid_points > 0)
+        if(valid_points > 0){
             min_distance = min_distance_loc;
-        else
+            float angle = msg->angle_min + (index * msg->angle_increment);
+            float ostacolo_x = min_distance * std::cos(angle);
+            float ostacolo_y = min_distance * std::sin(angle);
+
+            assignment2_msgs::msg::ObstaclePosition ob_msg;
+            ob_msg.distance = min_distance;
+            ob_msg.pos_x = ostacolo_x;
+            ob_msg.pos_y = ostacolo_y;
+            ob_msg.threshold = current_threshold;
+            pub_obstacle->publish(ob_msg);
+        }else
             min_distance = 100.0;
     }
 
@@ -117,6 +123,7 @@ class distance_check: public rclcpp::Node
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_emergency_vel;
     rclcpp::TimerBase::SharedPtr threshold_timer_;
     rclcpp::Service<Threshold>::SharedPtr server;
+    rclcpp::Publisher<assignment2_msgs::msg::ObstaclePosition>::SharedPtr pub_obstacle;
 
 };
 

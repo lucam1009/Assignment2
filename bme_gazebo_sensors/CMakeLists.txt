@@ -5,26 +5,25 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# find dependencies
+
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(geometry_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED) 
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED) 
-find_package(assignment2_msgs REQUIRED) 
+find_package(assignment2_msgs REQUIRED)
 
-# --- NODO 1: MOVEMENT (Client + UI) ---
+
 add_executable(movement src/movement.cpp)
 ament_target_dependencies(movement 
   rclcpp 
   geometry_msgs 
   std_msgs 
-  assignment2_msgs # FONDAMENTALE: Serve per il Client del service
+  assignment2_msgs 
 )
 
-# --- NODO 2: DISTANCE CHECK (Server + Monitor) ---
-# Nota: Ho messo src/distance_check.cpp. Assicurati che il file si chiami così!
+
 add_executable(distance src/distance.cpp)
 ament_target_dependencies(distance 
   rclcpp 
@@ -32,10 +31,10 @@ ament_target_dependencies(distance
   nav_msgs 
   std_msgs 
   geometry_msgs 
-  assignment2_msgs # FONDAMENTALE: Serve per il Server del service
+  assignment2_msgs
 )
 
-# Installazione dei due nodi
+
 install(TARGETS 
   movement
   distance 

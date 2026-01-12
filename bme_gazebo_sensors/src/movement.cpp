@@ -2,10 +2,12 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "std_msgs/msg/int32.hpp"
 #include "assignment2_msgs/srv/threshold.hpp"
+#include "assignment2_msgs/msg/obstacle_position.hpp"
 #include <iostream>
 #include <limits>
 #include <thread>
 #include <chrono>
+#include <deque>
 
 using std::placeholders::_1;
 using Threshold = assignment2_msgs::srv::Threshold;
@@ -19,6 +21,7 @@ class movement: public rclcpp::Node
         timer_ = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&movement::execute, this));
         sub_safety = this->create_subscription<std_msgs::msg::Int32>("/safety_status", 10, std::bind(&movement::callback_safety, this, _1));
         threshold_client = this->create_client<Threshold>("generate_threshold");
+        sub_obstacle = this->create_subscription<assignment2_msgs::msg::ObstaclePosition>("/obstacle", 10, std::bind(&movement::callback_obstacle,this, _1));
 
         std::thread(&movement::user_input_loop, this).detach();
     }
@@ -26,6 +29,9 @@ class movement: public rclcpp::Node
     double v = 0.0;
     double alpha = 0.0;
     int safety_status = 0;
+    float distance, pos_x, pos_y, threshold, lin_average, ang_average;
+    std::deque<float> lin_vel;
+    std::deque<float> ang_vel;
     geometry_msgs::msg::Twist message;
 
     private:
@@ -33,6 +39,7 @@ class movement: public rclcpp::Node
     void user_input_loop(){
         int choice;
         while(rclcpp::ok()){
+            std::cout << "The closest obstacle is at a distance: " << distance << "\n at position:\n x = " <<pos_x<< "\n y = " <<pos_y<< "\n with threshold: "<<threshold<< std::endl;
             std::cout << "Insert 1 for change the velocity or 2 for the threshold: ";
             std::cin >> choice;
             if (!std::cin.fail()) {
@@ -118,17 +125,32 @@ void get_user_input() {
 
         v = temp_v;
         alpha = temp_alpha;
+        lin_vel.push_back(v);
+        ang_vel.push_back(alpha);
+        float lin_sum = 0.0;
+        float ang_sum = 0.0;
+        if(lin_vel.size() == 5 || ang_vel.size() == 5){
+            for(int i = 0; i < 5; i++){
+                lin_sum += lin_vel[i];
+                ang_sum += ang_vel[i];
+            }
+            lin_average = lin_sum/5;
+            ang_average = ang_sum/5;
+            lin_vel.pop_front();
+            ang_vel.pop_front();
+        }
 
         for(int i = 0; i < 20; i++){
             if(safety_status == 1) {
                 break; 
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(200)); //aggiungo per far sì che il movimento duri solo per 2 secondi
+            std::this_thread::sleep_for(std::chrono::milliseconds(200)); //aggiungo per far sì che il movimento duri solo per 4 secondi
         }
 
         v = 0.0;
         alpha = 0.0;
         stop(); 
+
     }
 
     void callback_safety(const std_msgs::msg::Int32::SharedPtr msg)
@@ -140,10 +162,19 @@ void get_user_input() {
         }
     }
 
+    void callback_obstacle(const assignment2_msgs::msg::ObstaclePosition::SharedPtr obstacle)
+    {
+        distance = obstacle->distance;
+        pos_x = obstacle->pos_x;
+        pos_y = obstacle->pos_y;
+        threshold = obstacle->threshold;
+    }
+
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_velocity;
     rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_safety;
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Client<Threshold>::SharedPtr threshold_client;
+    rclcpp::Subscription<assignment2_msgs::msg::ObstaclePosition>::SharedPtr sub_obstacle;
 };
 
 int main(int argc, char * argv[])
