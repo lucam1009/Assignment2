@@ -7,12 +7,14 @@
 #include "std_msgs/msg/int32.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "assignment2_msgs/srv/threshold.hpp"
+#include "assignment2_msgs/srv/average.hpp"
 #include <cmath>
 #include "assignment2_msgs/msg/obstacle_position.hpp"
 
 using std::placeholders::_1;
 using std::placeholders::_2;
 using Threshold = assignment2_msgs::srv::Threshold;
+using Average = assignment2_msgs::srv::Average;
 using Obstacle_position = assignment2_msgs::msg::ObstaclePosition;
 
 
@@ -28,6 +30,7 @@ class distance_check: public rclcpp::Node
         pub_emergency_vel = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
         server = this->create_service<Threshold>("generate_threshold", std::bind(&distance_check::handle_service, this, _1, _2));
         pub_obstacle = this->create_publisher<assignment2_msgs::msg::ObstaclePosition>("/obstacle", 10);
+        server_average = this->create_service<Average>("generate_average", std::bind(&distance_check::handle_average, this, _1, _2));
 
 
     }
@@ -36,6 +39,8 @@ class distance_check: public rclcpp::Node
     bool emergency_mode = false;
     float min_distance = 100.0;
     float current_threshold = 1.5;
+    float current_lin_average = 0.0;
+    float current_ang_average = 0.0;
     geometry_msgs::msg::Pose current_pose;
     
     private:
@@ -115,6 +120,14 @@ class distance_check: public rclcpp::Node
         RCLCPP_INFO(this->get_logger(), "New threshold: %.2f", current_threshold);       
     }
 
+    void handle_average(const std::shared_ptr<Average::Request> req, std::shared_ptr<Average::Response> res){
+        current_lin_average = req->lin_average;
+        current_ang_average = req->ang_average;
+        res->lin_average = current_lin_average;
+        res->ang_average = current_ang_average;
+        RCLCPP_INFO(this->get_logger(), "New lin average: %.2f,\n new ang average: %.2f", current_lin_average, current_ang_average); 
+    }
+
 
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_scan;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_position;
@@ -123,6 +136,7 @@ class distance_check: public rclcpp::Node
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_emergency_vel;
     rclcpp::TimerBase::SharedPtr threshold_timer_;
     rclcpp::Service<Threshold>::SharedPtr server;
+    rclcpp::Service<Average>::SharedPtr server_average;
     rclcpp::Publisher<assignment2_msgs::msg::ObstaclePosition>::SharedPtr pub_obstacle;
 
 };
