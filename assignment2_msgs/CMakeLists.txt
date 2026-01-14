@@ -11,6 +11,8 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
 "srv/Threshold.srv"
+"msg/ObstaclePosition.msg"
+"srv/Average.srv"
 )
 ament_export_dependencies(rosidl_default_runtime)
 # uncomment the following section in order to fill in
