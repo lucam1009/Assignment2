@@ -102,10 +102,10 @@ def generate_launch_description():
         executable="parameter_bridge",
         arguments=[
             "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
-            "/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist",
+            "/robot_vel@geometry_msgs/msg/Twist@gz.msgs.Twist",
             "/odom@nav_msgs/msg/Odometry@gz.msgs.Odometry",
             "/joint_states@sensor_msgs/msg/JointState@gz.msgs.Model",
-            "/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan"
+            "/laser_scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan"
         ],
         output="screen",
         parameters=[

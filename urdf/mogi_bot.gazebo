@@ -5,7 +5,7 @@
         filename="gz-sim-diff-drive-system"
         name="gz::sim::systems::DiffDrive">
         <!-- Topic for the command input -->
-        <topic>/cmd_vel</topic>
+        <topic>/robot_vel</topic>
 
         <!-- Wheel joints -->
         <left_joint>left_wheel_joint</left_joint>
@@ -47,7 +47,7 @@
  <gazebo reference="scan_link">
     <sensor name="gpu_lidar" type="gpu_lidar">
       <update_rate>10</update_rate>
-      <topic>scan</topic>
+      <topic>laser_scan</topic>
       <gz_frame_id>scan_link</gz_frame_id>
       <lidar>
         <scan>
