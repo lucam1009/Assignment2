@@ -7,9 +7,38 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(geometry_msgs REQUIRED) 
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED) 
+find_package(assignment2_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
+add_executable(movement src/movement.cpp)
+ament_target_dependencies(movement 
+  rclcpp 
+  geometry_msgs 
+  std_msgs 
+  assignment2_msgs 
+)
+
+
+add_executable(distance src/distance.cpp)
+ament_target_dependencies(distance 
+  rclcpp 
+  sensor_msgs 
+  nav_msgs 
+  std_msgs 
+  geometry_msgs 
+  assignment2_msgs
+)
+
+install(TARGETS 
+  movement
+  distance 
+  DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
